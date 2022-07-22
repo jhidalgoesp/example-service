@@ -1,6 +1,6 @@
 # example-services
 
-This is an example of a Rest API application using aws serverless:
+This is an example of a Rest API application using aws serverless, it took around 14 hours to develop:
 
 ```bash
 .
@@ -15,10 +15,7 @@ This is an example of a Rest API application using aws serverless:
 └── template.yaml
 ```
 
-## Demo
-
-Endpoints:
-
+## Example
 
 https://wwdg2g2q44.execute-api.us-east-1.amazonaws.com/dev/api/v1/tweets?username={username}&count={count} [GET]
 
@@ -26,7 +23,7 @@ https://wwdg2g2q44.execute-api.us-east-1.amazonaws.com/dev/api/v1/users?id={user
 
 https://wwdg2g2q44.execute-api.us-east-1.amazonaws.com/dev/api/v1/metrics [GET]
 
-Example:
+## Live Demo:
 
 https://wwdg2g2q44.execute-api.us-east-1.amazonaws.com/dev/api/v1/tweets?username=cristiano&count=5 [GET]
 
@@ -169,6 +166,36 @@ To generate the project documentation run the following command:
 ```
 make docs
 ```
+
+## Database Design
+
+```
+Users Table
++--------+------+----------------+---------------+
+| ID(PK) | Name | WorkExperience | TwitterHandle |
++--------+------+----------------+---------------+
+|    123 | Jose | 5 years        | jhidalgoesp   |
++--------+------+----------------+---------------+
+
+Atomic Counters Table
++---------------+---------+
+|    ID(PK)     | Counter |
++---------------+---------+
+| profileVisits |      20 |
++---------------+---------+
+
+```
+
+## Get Profile Request Concurrency
+
+Atomic counters:
+
+Used the UpdateItem operation to implement an atomic counter—a numeric attribute that is incremented, unconditionally, without interfering with other write requests. (All write requests are applied in the order in which they were received.) With an atomic counter, the updates are not idempotent. In other words, the numeric value increments each time you call UpdateItem.
+
+Here i use an atomic counter to track the number of visitors to a website. In this case, the application would increment a numeric value, regardless of its current value. If an UpdateItem operation fails, the application could simply retry the operation. This would risk updating the counter twice, but we can probably tolerate a slight overcounting or undercounting of website visitors.
+
+An atomic counter would not be appropriate where overcounting or undercounting can't be tolerated (for example, in a banking application). In this case, it is safer to use a conditional update instead of an atomic counter.
+
 
 ## Built With
 
