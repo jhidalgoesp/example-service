@@ -8,12 +8,44 @@ This is an example of a Rest API application using aws serverless, it took aroun
 ├── README.md                   <-- This instructions file
 ├── cmd                         <-- Source code all the lambda functions
 │   ├── main.go                 <-- Lambda function code
-│   └── handler.go              <-- HttpHandler
+│   └── handler.go              <-- Lamda http handler code
 ├── pkg                         <-- Library packages usable by external applications
 ├── internal                    <-- Non shared internal code 
 ├── tests                       <-- Shared test mocks and assertions
 └── template.yaml
 ```
+## Database Design
+
+```
+Users Table
++--------+------+----------------+---------------+
+| ID(PK) | Name | WorkExperience | TwitterHandle |
++--------+------+----------------+---------------+
+|    123 | Jose | 5 years        | jhidalgoesp   |
++--------+------+----------------+---------------+
+
+Atomic Counters Table
++---------------+---------+
+|    ID(PK)     | Counter |
++---------------+---------+
+| profileVisits |      20 |
++---------------+---------+
+
+```
+
+## Get Profile Request Concurrency
+
+***Atomic counters:***
+
+Used the UpdateItem operation to implement an atomic counter—a numeric attribute that is incremented, unconditionally, without interfering with other write requests. (All write requests are applied in the order in which they were received.) With an atomic counter, the updates are not idempotent. In other words, the numeric value increments each time you call UpdateItem.
+
+Here i use an atomic counter to track the number of visitors to a website. In this case, the application would increment a numeric value, regardless of its current value. If an UpdateItem operation fails, the application could simply retry the operation. This would risk updating the counter twice, but we can probably tolerate a slight overcounting or undercounting of website visitors.
+
+An atomic counter would not be appropriate where overcounting or undercounting can't be tolerated (for example, in a banking application). In this case, it is safer to use a conditional update instead of an atomic counter.
+
+In order for the lambda function to be able to handle thousands of requests it would need provisioned concurrency and an increment on the default quota.
+
+***Other alternatives if a more reliable counter is needed include using a queue(SQS, SNS, EventBridge) and increment the counter asynchronously in another lambda function.***
 
 ## Example
 
@@ -29,7 +61,26 @@ https://wwdg2g2q44.execute-api.us-east-1.amazonaws.com/dev/api/v1/tweets?usernam
 
 https://wwdg2g2q44.execute-api.us-east-1.amazonaws.com/dev/api/v1/users?id=123 [GET, PUT]
 
+For the PUT method use the following json body:
+
+```
+{
+    "name": "[name]",
+    "workExperience": "[experience]",
+    "twitterHandle": "[twitterHandle]"
+}
+```
+
 https://wwdg2g2q44.execute-api.us-east-1.amazonaws.com/dev/api/v1/metrics [GET]
+
+
+### Front End Demo
+
+[https://master.d1p5oin4u7540s.amplifyapp.com/?id=1](https://master.d1p5oin4u7540s.amplifyapp.com/?id=1)
+
+[https://master.d1p5oin4u7540s.amplifyapp.com/?id=2](https://master.d1p5oin4u7540s.amplifyapp.com/?id=2)
+
+[https://master.d1p5oin4u7540s.amplifyapp.com/?id=3](https://master.d1p5oin4u7540s.amplifyapp.com/?id=3)
 
 ## Requirements
 
@@ -45,7 +96,7 @@ https://wwdg2g2q44.execute-api.us-east-1.amazonaws.com/dev/api/v1/metrics [GET]
 In this example we use the built-in `sam build` to automatically download all the dependencies and package our build target.   
 Read more about [SAM Build here](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-cli-command-reference-sam-build.html) 
 
-The `sam build` command is wrapped inside of the `Makefile`. To execute this simply run
+The `sam build` command is wrapped inside the `Makefile`. To execute this simply run
  
 ```shell
 make build
@@ -166,36 +217,6 @@ To generate the project documentation run the following command:
 ```
 make docs
 ```
-
-## Database Design
-
-```
-Users Table
-+--------+------+----------------+---------------+
-| ID(PK) | Name | WorkExperience | TwitterHandle |
-+--------+------+----------------+---------------+
-|    123 | Jose | 5 years        | jhidalgoesp   |
-+--------+------+----------------+---------------+
-
-Atomic Counters Table
-+---------------+---------+
-|    ID(PK)     | Counter |
-+---------------+---------+
-| profileVisits |      20 |
-+---------------+---------+
-
-```
-
-## Get Profile Request Concurrency
-
-Atomic counters:
-
-Used the UpdateItem operation to implement an atomic counter—a numeric attribute that is incremented, unconditionally, without interfering with other write requests. (All write requests are applied in the order in which they were received.) With an atomic counter, the updates are not idempotent. In other words, the numeric value increments each time you call UpdateItem.
-
-Here i use an atomic counter to track the number of visitors to a website. In this case, the application would increment a numeric value, regardless of its current value. If an UpdateItem operation fails, the application could simply retry the operation. This would risk updating the counter twice, but we can probably tolerate a slight overcounting or undercounting of website visitors.
-
-An atomic counter would not be appropriate where overcounting or undercounting can't be tolerated (for example, in a banking application). In this case, it is safer to use a conditional update instead of an atomic counter.
-
 
 ## Built With
 
